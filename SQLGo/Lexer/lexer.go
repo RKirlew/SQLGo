@@ -1,8 +1,8 @@
 package lexer
 
 import (
-	"regexp"
 	"strings"
+	"text/scanner"
 )
 
 type Token struct {
@@ -12,26 +12,39 @@ type Token struct {
 
 func Lex(statement string) []Token {
 	// Tokenize the query
-	tokens := []Token{}
-	content := strings.Fields(statement)
+	var tokens []Token
+	var s scanner.Scanner
+	s.Init(strings.NewReader(statement))
+	s.Mode = scanner.ScanStrings | scanner.ScanIdents | scanner.ScanFloats | scanner.ScanInts
 
-	// Regular expressions for basic tokens
-	keywordPattern := regexp.MustCompile(`(?i)(SELECT|FROM|WHERE|AND|OR)`)
-	identifierPattern := regexp.MustCompile(`[a-zA-Z_]\w*`)
-	operatorPattern := regexp.MustCompile(`[=><]`)
-	stringLiteralPattern := regexp.MustCompile(`'[^']*'`)
+	for {
+		tok := s.Scan()
+		if tok == scanner.EOF {
+			break
+		}
 
-	for _, word := range content {
-		if keywordPattern.MatchString(word) {
-			tokens = append(tokens, Token{Type: "KEYWORD", Value: word})
-		} else if identifierPattern.MatchString(word) {
-			tokens = append(tokens, Token{Type: "IDENTITY", Value: word})
-		} else if operatorPattern.MatchString(word) {
-			tokens = append(tokens, Token{Type: "OPERATOR", Value: word})
-		} else if stringLiteralPattern.MatchString(word) {
-			tokens = append(tokens, Token{Type: "LITERAL", Value: word})
-		} else {
-			tokens = append(tokens, Token{Type: "UNKNOWN", Value: word})
+		tokValue := s.TokenText()
+		switch s.TokenText() {
+		case "SELECT", "FROM", "WHERE", "AND", "OR":
+			tokens = append(tokens, Token{Type: "KEYWORD", Value: tokValue})
+		case "=", ">", "<":
+			tokens = append(tokens, Token{Type: "OPERATOR", Value: tokValue})
+		case "'":
+			// Handle string literals
+			literal := tokValue
+			for {
+				tok = s.Scan()
+				tokValue = s.TokenText()
+				if tok == scanner.EOF || tokValue == "'" {
+					break
+				}
+				literal += tokValue
+			}
+			literal = literal[1:len(literal)]
+			tokens = append(tokens, Token{Type: "LITERAL", Value: literal})
+		default:
+			// Handle identifiers, numbers, and other cases
+			tokens = append(tokens, Token{Type: "IDENTIFIER", Value: tokValue})
 		}
 	}
 
