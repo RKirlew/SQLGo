@@ -1,4 +1,4 @@
-****SQLGo****************
+****SQLGo****
 
 
 ![image](https://github.com/RKirlew/SQLGo/assets/15880681/a830b203-cd98-4ad2-b0c7-913cd21a488a)
