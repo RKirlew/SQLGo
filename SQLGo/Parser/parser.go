@@ -2,6 +2,7 @@ package parser
 
 import (
 	lexer "SQLGo/Lexer"
+	"errors"
 	"fmt"
 )
 
@@ -15,7 +16,8 @@ type SelectNode struct {
 }
 
 type ColumnNode struct {
-	Name string
+	Name  string
+	Table string
 }
 
 type TableNode struct {
@@ -91,6 +93,27 @@ func Parse(fetchedTokens []lexer.Token) (Node, error) {
 		case "IDENTIFIER":
 			// Handle identifiers (columns, tables, etc.)
 			// Create appropriate nodes and establish relationships
+
+			if i+1 < len(fetchedTokens) && fetchedTokens[i+1].Value == "." {
+				// Handle table.column syntax
+				columnNode := &ColumnNode{Table: token.Value, Name: fetchedTokens[i+2].Value}
+				selectNode, ok := rootNode.(*SelectNode)
+				if !ok {
+					return nil, errors.New("Expected root node to be SelectNode")
+				}
+				selectNode.Columns = append(selectNode.Columns, columnNode)
+				i += 2 // Move past table, dot, and column name tokens
+			} else {
+				// Handle standalone column or alias
+				columnNode := &ColumnNode{Name: token.Value}
+				selectNode, ok := rootNode.(*SelectNode)
+				if !ok {
+					return nil, errors.New("Expected root node to be SelectNode")
+				}
+				selectNode.Columns = append(selectNode.Columns, columnNode)
+				i++ // Move past the identifier token
+			}
+
 		case "OPERATOR":
 			// Handle operators (=, >, <, etc.)
 			// Create appropriate nodes and establish relationships
