@@ -8,7 +8,9 @@ import (
 
 type Node interface {
 }
-
+type IdentifierNode struct {
+	Value string // Identifier value (e.g., column name)
+}
 type SelectNode struct {
 	Columns []Node
 	From    Node
@@ -116,9 +118,20 @@ func Parse(fetchedTokens []lexer.Token) (Node, error) {
 
 		case "OPERATOR":
 			// Handle operators (=, >, <, etc.)
+			operatorNode := &OperatorNode{
+				Operator: token.Value,
+			}
+			_ = operatorNode
+			remainingTokens := fetchedTokens[1:]
+			operatorNode.Left = parseOperand(remainingTokens)
+			operatorNode.Right = parseOperand(remainingTokens)
 			// Create appropriate nodes and establish relationships
 		case "LITERAL":
 			// Handle literals ('value', 123, etc.)
+			literalNode:=&LiteralNode{
+				Value: token.Value,
+			}
+			_=literalNode
 			// Create appropriate nodes and establish relationships
 		default:
 			// Handle unknown tokens or syntax errors
@@ -260,4 +273,31 @@ func parseWhereClause(tokens []lexer.Token, startIndex int) (Node, int, error) {
 
 	// Return the parsed WHERE clause node and the new index
 	return currentNode, i, nil
+}
+func parseOperand(tokens []lexer.Token) Node {
+	token := tokens[0]
+
+	if token.Type == "IDENTIFIER" {
+		// Parse identifier and create an IdentifierNode
+		identifierNode := &IdentifierNode{
+			Value: token.Value,
+		}
+		// Remove the identifier token from the tokens list
+		remainingTokens := tokens[1:]
+		_ = remainingTokens
+		return identifierNode
+	} else if token.Type == "LITERAL" {
+		// Parse literal and create a LiteralNode
+		literalNode := &LiteralNode{
+			Value: token.Value,
+		}
+		// Remove the literal token from the tokens list
+		remainingTokens := tokens[1:]
+		_ = remainingTokens
+
+		return literalNode
+	} else {
+		// Handle error or return nil for unsupported operands
+		return nil
+	}
 }
